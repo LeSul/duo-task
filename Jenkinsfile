@@ -4,26 +4,23 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                docker-compose build
+                docker build -t leesullivan24/duo-jenk:latest -t leesullivan24/duo-jenk:v${BUILD_NUMBER} .
                 '''
             }
         }
         stage('Push') {
             steps {
                 sh '''
-                docker-compose push
+                docker push leesullivan24/duo-jenk:latest
+                docker push leesullivan24/duo-jenk:v${BUILD_NUMBER}
                 '''
             }
         }
         stage('Deploy') {
             steps {
                 sh'''
-                ssh -i "~/.ssh/id_rsa" jenkins@34.130.245.1 << EOF
-                rm -rf duo-task
-                git clone https://github.com/PCMBarber/duo-task.git
-                cd duo-task
-                docker-compose down
-                docker-compose up -d
+                kubectl apply -f ./kubernetes
+                kubectl set image deployment/flask-deployment flask-container=leesullivan24/duo-jenk:v${BUILD_NUMBER}
                 '''
             }
         }
